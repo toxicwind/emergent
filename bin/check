@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# emergent — self-test gate (PASS/FAIL).
+# Small experiment: paper-borrow racing demo. No tsconfig in-tree, so the gate is
+# a bun build (bun-native, esnext) to validate the entry parses + type-errors at
+# load. Does not execute the (network/search) race.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+export RUN_FAST_ACTIVE=0
+BUN="${BUN:-/home/toxic/.bun/bin/bun}"; [ -x "$BUN" ] || BUN=bun
+
+echo "== emergent check: start =="
+[ -f paper-borrow.ts ] || { echo "FAIL: paper-borrow.ts missing"; exit 1; }
+
+set +e
+out="$("$BUN" build paper-borrow.ts --target=bun --outfile=/tmp/emergent-check.js 2>&1)"
+rc=$?
+set -e
+echo "$out"
+[ "$rc" -eq 0 ] || { echo "FAIL: bun build rc=$rc"; exit 1; }
+rm -f /tmp/emergent-check.js
+
+echo "== emergent check: PASS =="
+exit 0

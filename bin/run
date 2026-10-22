@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# emergent — primary operation: run the paper-borrow racing demo.
+# Entry: paper-borrow.ts (races AST / BM25 / external prior-art search for a paper).
+#
+# Usage:
+#   bin/run check         # fast gate: tsc --noEmit + entry presence
+#   bin/run <query...>    # run paper-borrow with a query
+set -euo pipefail
+cd "$(dirname "$0")/.."
+export RUN_FAST_ACTIVE=0
+BUN="${BUN:-/home/toxic/.bun/bin/bun}"; [ -x "$BUN" ] || BUN=bun
+
+if [ "${1:-}" = "check" ]; then exec ./bin/check; fi
+[ -f paper-borrow.ts ] || { echo "FAIL: paper-borrow.ts missing"; exit 1; }
+exec "$BUN" run paper-borrow.ts "$@"
