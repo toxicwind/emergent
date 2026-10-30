@@ -1,0 +1,26 @@
+{
+  "product": "emergent",
+  "path": "/home/toxic/pens/ranch/products/emergent",
+  "files": 2,
+  "detected_at": "2026-10-30T06:11:06.540609Z",
+  "env_vars": {
+    "GH_TOKEN": [
+      "paper-borrow.ts"
+    ],
+    "GITHUB_TOKEN": [
+      "paper-borrow.ts"
+    ],
+    "PAPER_BORROW_PATTERN_BORROW": [
+      "paper-borrow.ts"
+    ],
+    "PAPER_BORROW_RACE_PAPERS": [
+      "paper-borrow.ts"
+    ],
+    "legSummary": [
+      "paper-borrow.ts"
+    ],
+    "query": [
+      "paper-borrow.ts"
+    ]
+  }
+}
