@@ -28,7 +28,7 @@ This directory is the seam that wires them together.
 ## Usage
 
 ```bash
-cd /home/toxic/estate/ranch
+cd /home/toxic/pens/estate/ranch
 GITHUB_TOKEN=$(gh auth token) bun run emergent/paper-borrow.ts "hedged requests tail latency" \
   --maxn 6 --terms 5 --top 5 --perPage 3 --jsonl emergent/demo/transcript-2026-10-03.json
 ```
