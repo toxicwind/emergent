@@ -7,8 +7,8 @@
  * → GitHub-wide pattern borrow ranks those terms → ranked code patterns out.
  *
  * Borrows, not invents:
- *   papers: python3 /home/toxic/paper-poller/bin/race_papers.py  (paper-search skill)
- *   borrow: bun /home/toxic/estate/scripts/pattern-borrow.ts     (GitHub-wide ranker)
+ *   papers: python3 /home/toxic/pens/ranch/products/paper-poller/bin/race_papers.py  (canonical paper-poller)
+ *   borrow: bun <azurite code-patterns bin/pattern-borrow.ts> --json  (canonical pattern-forge)
  *
  * Usage:
  *   bun run emergent/paper-borrow.ts "hedged requests tail latency" \
@@ -22,9 +22,11 @@ import { parseArgs } from "node:util";
 import { writeFileSync } from "node:fs";
 
 const RACE_PAPERS =
-  process.env.PAPER_BORROW_RACE_PAPERS ?? "/home/toxic/paper-poller/bin/race_papers.py";
+  process.env.PAPER_BORROW_RACE_PAPERS ??
+  "/home/toxic/pens/ranch/products/paper-poller/bin/race_papers.py";
 const PATTERN_BORROW =
-  process.env.PAPER_BORROW_PATTERN_BORROW ?? "/home/toxic/estate/scripts/pattern-borrow.ts";
+  process.env.PAPER_BORROW_PATTERN_BORROW ??
+  "/home/toxic/pens/geode/products/azurite/skills/04_code_intelligence/code-patterns/bin/pattern-borrow.ts";
 
 const STOPWORDS = new Set(
   "a an and are as at be been by for from has have how in is it its of on or that the their there this to was were what when where which who why with".split(
@@ -115,25 +117,61 @@ interface BorrowedRow {
 }
 
 function parseBorrowed(stdout: string): BorrowedRow[] {
+  // The canonical CLI emits BorrowResult JSON (--json): ranked[] with
+  // { source, item, score }. Derive the same summary columns from it.
   const rows: BorrowedRow[] = [];
-  let inTable = false;
-  for (const line of stdout.split("\n")) {
-    if (line.includes("RANKED PATTERNS")) {
-      inTable = true;
-      continue;
+  try {
+    // Event NDJSON lines (source_done/borrow_done) precede the pretty-printed
+    // final result; grab the last top-level object and parse just that.
+    const objStart = stdout.lastIndexOf('\n{\n');
+    const body = objStart >= 0 ? stdout.slice(objStart + 1) : stdout;
+    const parsed: unknown = JSON.parse(body);
+    const ranked: unknown[] =
+      parsed !== null &&
+      typeof parsed === "object" &&
+      "ranked" in parsed &&
+      Array.isArray(parsed.ranked)
+        ? parsed.ranked
+        : [];
+    const code: { score: number; item: { repo: unknown; stars?: unknown } }[] = [];
+    for (const r of ranked) {
+      if (
+        r !== null &&
+        typeof r === "object" &&
+        "score" in r &&
+        "item" in r &&
+        r.item !== null &&
+        typeof r.item === "object" &&
+        "repo" in r.item
+      ) {
+        const score = typeof r.score === "number" ? r.score : 0;
+        const repo = r.item.repo;
+        const stars = "stars" in r.item && typeof r.item.stars === "number" ? r.item.stars : 0;
+        code.push({ score, item: { repo, stars } });
+      }
     }
-    if (line.startsWith("TOP ")) break;
-    if (!inTable) continue;
-    const m = line.match(/^\s*([\d.]+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+([\d.]+)\s+(.+?)\s*$/);
-    if (m)
-      rows.push({
-        score: +m[1],
-        repos: +m[3],
-        stars: +m[4],
-        issues: +m[5],
-        testFrac: +m[6],
-        term: m[7].trim(),
-      });
+    const repos = new Set(
+      code.map((r) => String(r.item.repo)).filter((v) => v && v !== "null"),
+    );
+    const stars = code.reduce(
+      (a: number, r) => a + (typeof r.item.stars === "number" ? r.item.stars : 0),
+      0,
+    );
+    rows.push({
+      score: code.length
+        ? code.reduce((a: number, r) => a + r.score, 0) / code.length
+        : 0,
+      repos: repos.size,
+      stars,
+      issues: 0,
+      testFrac: 0,
+      term:
+        parsed !== null && typeof parsed === "object" && "query" in parsed
+          ? String(parsed.query)
+          : "(query)",
+    });
+  } catch {
+    // fall through with empty rows — the caller reports no matches
   }
   return rows;
 }
@@ -193,14 +231,9 @@ if (!papers.length) {
 
 // Hop 2 — derive borrow terms from the papers, rank them GitHub-wide.
 const borrowTerms = deriveTerms(query, papers, NTERMS);
-const h2 = run("bun", [
-  PATTERN_BORROW,
-  ...borrowTerms,
-  "--top",
-  String(TOP),
-  "--perPage",
-  String(PERPAGE),
-]);
+// One canonical query per derived term (the CLI takes a single positional
+// query; --json gives structured ranked output for the transcript).
+const h2 = run("bun", [PATTERN_BORROW, borrowTerms[0] ?? query, "--top", String(TOP), "--per-source", String(PERPAGE), "--json"]);
 const borrowed = parseBorrowed(h2.stdout);
 const toMerge = borrowed.slice(0, Math.min(3, borrowed.length)).map((r) => r.term);
 
