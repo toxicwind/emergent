@@ -1,0 +1,28 @@
+{
+  "name": "emergent-paper-borrow",
+  "version": "1.0.0",
+  "description": "Paper-finder and pattern-borrow integration for estate product",
+  "main": "paper-borrow.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --hot run paper-borrow.ts",
+    "test": "bun test",
+    "typecheck": "tsgo --noEmit -p tsconfig.json",
+    "lint": "biome check .",
+    "fmt": "biome format --write .",
+    "build": "bun build paper-borrow.ts --outdir dist"
+  },
+  "bin": {
+    "paper-borrow": "./paper-borrow.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.0.0",
+    "bun-types": "npm:@types/bun@latest",
+    "typescript": "^5.3.3",
+    "@biomejs/biome": "^1.7.3"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "private": true
+}
